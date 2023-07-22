@@ -136,5 +136,3 @@ boton_guardar_excel = tk.Button(ventana, text="Guardar en Excel", command=guarda
 boton_guardar_excel.grid(row=9, column=0, columnspan=2, padx=10, pady=5)
 
 ventana.mainloop()
-
-#prueba

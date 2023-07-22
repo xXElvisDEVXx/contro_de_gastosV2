@@ -45,6 +45,9 @@ def agregar_gasto_diario():
 
         messagebox.showinfo("Gasto diario agregado", f"Se ha agregado un gasto de {gasto_dia:n} CLP para el día {fecha.strftime('%Y-%m-%d')}.")
         mostrar_gastos_por_dia(fecha)
+
+        # Guardar los datos automáticamente en el archivo Excel
+        guardar_datos_excel()
     except ValueError:
         messagebox.showerror("Error", "Ingresa un valor numérico válido.")
 
@@ -131,8 +134,5 @@ tabla.heading("#2", text="Fecha")
 tabla.heading("#3", text="Monto")
 tabla.grid(row=8, column=0, columnspan=2, padx=10, pady=5)
 
-# Botón para guardar los datos en un archivo Excel
-boton_guardar_excel = tk.Button(ventana, text="Guardar en Excel", command=guardar_datos_excel)
-boton_guardar_excel.grid(row=9, column=0, columnspan=2, padx=10, pady=5)
-
 ventana.mainloop()
+

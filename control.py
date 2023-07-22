@@ -23,7 +23,7 @@ def calcular_saldo():
 def seleccionar_fecha(event):
     fecha_seleccionada = cal.selection_get()
     label_fecha.config(text=f"Fecha seleccionada: {fecha_seleccionada.strftime('%Y-%m-%d')}")
-    mostrar_gastos_por_dia(fecha_seleccionada)
+    cargar_datos_por_fecha(fecha_seleccionada)
 
 def agregar_gasto_diario():
     try:
@@ -56,6 +56,9 @@ def mostrar_gastos_por_dia(fecha):
     if fecha in gastos_por_dia:
         for gasto in gastos_por_dia[fecha]:
             tabla.insert("", "end", values=(gasto["descripcion"], fecha.strftime('%Y-%m-%d'), f"{gasto['monto']:n} CLP"))
+    else:
+        tabla.delete(*tabla.get_children())
+        cargar_datos_por_fecha(fecha)
 
 def guardar_datos_excel():
     datos = []
@@ -79,6 +82,21 @@ def cargar_datos_excel():
                 gastos_por_dia[fecha].append({"descripcion": descripcion, "monto": monto})
             else:
                 gastos_por_dia[fecha] = [{"descripcion": descripcion, "monto": monto}]
+
+def cargar_datos_por_fecha(fecha):
+    if os.path.exists('gastos_diarios.xlsx'):
+        df = pd.read_excel('gastos_diarios.xlsx', engine='openpyxl')
+        df['Fecha'] = pd.to_datetime(df['Fecha'], format='%Y-%m-%d')
+        df_filtrado = df[df['Fecha'] == fecha]
+        tabla.delete(*tabla.get_children())  # Limpiamos la tabla antes de mostrar los nuevos datos
+        for index, row in df_filtrado.iterrows():
+            descripcion = row['Descripción']
+            monto = row['Monto']
+            if fecha in gastos_por_dia:
+                gastos_por_dia[fecha].append({"descripcion": descripcion, "monto": monto})
+            else:
+                gastos_por_dia[fecha] = [{"descripcion": descripcion, "monto": monto}]
+            tabla.insert("", "end", values=(descripcion, fecha.strftime('%Y-%m-%d'), f"{monto:n} CLP"))
 
 # Crear ventana principal
 ventana = tk.Tk()
@@ -135,4 +153,3 @@ tabla.heading("#3", text="Monto")
 tabla.grid(row=8, column=0, columnspan=2, padx=10, pady=5)
 
 ventana.mainloop()
-

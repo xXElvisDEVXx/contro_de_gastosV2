@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from tkcalendar import Calendar
-import calendar
 from datetime import datetime
 import locale
 import pandas as pd
@@ -13,10 +12,8 @@ locale.setlocale(locale.LC_ALL, 'es_CL.UTF-8')
 
 def calcular_saldo():
     ingresos = float(entrada_ingresos.get())
-
     # Calcular gasto total del mes
     gasto_total_mes = sum(sum(gastos['monto'] for gastos in gastos_por_dia[fecha]) for fecha in gastos_por_dia)
-
     saldo = ingresos - gasto_total_mes
     label_saldo.config(text=f"Saldo restante: {saldo:n} CLP")
 
@@ -85,6 +82,13 @@ def cargar_datos_excel():
             else:
                 gastos_por_dia[fecha] = [{"descripcion": descripcion, "monto": monto, "categoria": categoria}]
 
+def agregar_categoria_personalizada():
+    nueva_categoria = entrada_categoria_personalizada.get().strip()
+    if nueva_categoria and nueva_categoria not in categorias_gastos:
+        categorias_gastos.append(nueva_categoria)
+        combo_categoria["values"] = categorias_gastos
+        combo_categoria.set(nueva_categoria)
+
 # Crear ventana principal
 ventana = tk.Tk()
 ventana.title("Control de Gastos Mensuales")
@@ -120,11 +124,11 @@ etiqueta_descripcion_gasto.grid(row=4, column=0, padx=10, pady=5)
 entrada_descripcion_gasto = tk.Entry(ventana)
 entrada_descripcion_gasto.grid(row=4, column=1, padx=10, pady=5)
 
-# Lista de categorías de gastos
-categorias_gastos = ["Comida", "Transporte", "Gastos Comunes", "Renta", "Ocio", "Créditos"]
-combo_categoria = ttk.Combobox(ventana, values=categorias_gastos, state="readonly")
+# Lista de categorías de gastos predefinidas
+categorias_gastos_predefinidas = ["Comida", "Transporte", "Gastos Comunes", "Renta", "Ocio", "Créditos"]
+combo_categoria = ttk.Combobox(ventana, values=categorias_gastos_predefinidas, state="readonly")
 combo_categoria.grid(row=5, column=1, padx=10, pady=5)
-combo_categoria.set(categorias_gastos[0])  # Valor por defecto
+combo_categoria.set(categorias_gastos_predefinidas[0])  # Valor por defecto
 
 # Etiqueta para seleccionar categoría
 etiqueta_categoria = tk.Label(ventana, text="Categoría:")
@@ -152,5 +156,16 @@ tabla.grid(row=9, column=0, columnspan=2, padx=10, pady=5)
 
 # Asociar evento de selección de fecha al calendario
 cal.bind("<<CalendarSelected>>", seleccionar_fecha)
+
+# Etiqueta y entrada para agregar categoría personalizada
+etiqueta_categoria_personalizada = tk.Label(ventana, text="Agregar Categoría:")
+etiqueta_categoria_personalizada.grid(row=10, column=0, padx=10, pady=5)
+entrada_categoria_personalizada = tk.Entry(ventana)
+entrada_categoria_personalizada.grid(row=10, column=1, padx=10, pady=5)
+boton_agregar_categoria = tk.Button(ventana, text="Agregar", command=agregar_categoria_personalizada)
+boton_agregar_categoria.grid(row=10, column=2, padx=10, pady=5)
+
+# Lista de todas las categorías de gastos
+categorias_gastos = categorias_gastos_predefinidas[:]
 
 ventana.mainloop()

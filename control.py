@@ -23,18 +23,19 @@ def calcular_saldo():
 def seleccionar_fecha(event):
     fecha_seleccionada = cal.selection_get()
     label_fecha.config(text=f"Fecha seleccionada: {fecha_seleccionada.strftime('%Y-%m-%d')}")
-    cargar_datos_por_fecha(fecha_seleccionada)
+    mostrar_gastos_por_dia(fecha_seleccionada)
 
 def agregar_gasto_diario():
     try:
         fecha = cal.selection_get()
         gasto_dia = float(entrada_gasto_diario.get())
         descripcion_gasto = entrada_descripcion_gasto.get()
+        categoria_gasto = combo_categoria.get()
 
         if fecha in gastos_por_dia:
-            gastos_por_dia[fecha].append({"descripcion": descripcion_gasto, "monto": gasto_dia})
+            gastos_por_dia[fecha].append({"descripcion": descripcion_gasto, "monto": gasto_dia, "categoria": categoria_gasto})
         else:
-            gastos_por_dia[fecha] = [{"descripcion": descripcion_gasto, "monto": gasto_dia}]
+            gastos_por_dia[fecha] = [{"descripcion": descripcion_gasto, "monto": gasto_dia, "categoria": categoria_gasto}]
 
         label_gasto_total_mes.config(text=f"Gasto total del mes: {sum(sum(gastos['monto'] for gastos in gastos_por_dia[fecha]) for fecha in gastos_por_dia):n} CLP")
 
@@ -43,7 +44,7 @@ def agregar_gasto_diario():
         saldo = ingresos - sum(sum(gastos['monto'] for gastos in gastos_por_dia[fecha]) for fecha in gastos_por_dia)
         label_saldo.config(text=f"Saldo restante: {saldo:n} CLP")
 
-        messagebox.showinfo("Gasto diario agregado", f"Se ha agregado un gasto de {gasto_dia:n} CLP para el día {fecha.strftime('%Y-%m-%d')}.")
+        messagebox.showinfo("Gasto diario agregado", f"Se ha agregado un gasto de {gasto_dia:n} CLP para el día {fecha.strftime('%Y-%m-%d')} en la categoría '{categoria_gasto}'.")
         mostrar_gastos_por_dia(fecha)
 
         # Guardar los datos automáticamente en el archivo Excel
@@ -55,18 +56,18 @@ def mostrar_gastos_por_dia(fecha):
     tabla.delete(*tabla.get_children())
     if fecha in gastos_por_dia:
         for gasto in gastos_por_dia[fecha]:
-            tabla.insert("", "end", values=(gasto["descripcion"], fecha.strftime('%Y-%m-%d'), f"{gasto['monto']:n} CLP"))
+            tabla.insert("", "end", values=(gasto["descripcion"], fecha.strftime('%Y-%m-%d'), f"{gasto['monto']:n} CLP", gasto["categoria"]))
     else:
         tabla.delete(*tabla.get_children())
-        cargar_datos_por_fecha(fecha)
+        tabla.insert("", "end", values=("No hay gastos registrados para este día", "", "", ""))
 
 def guardar_datos_excel():
     datos = []
     for fecha, gastos in gastos_por_dia.items():
         for gasto in gastos:
-            datos.append([fecha.strftime('%Y-%m-%d'), gasto['descripcion'], gasto['monto']])
+            datos.append([fecha.strftime('%Y-%m-%d'), gasto['descripcion'], gasto['monto'], gasto['categoria']])
     
-    df = pd.DataFrame(datos, columns=['Fecha', 'Descripción', 'Monto'])
+    df = pd.DataFrame(datos, columns=['Fecha', 'Descripción', 'Monto', 'Categoría'])
     df.to_excel('gastos_diarios.xlsx', index=False, engine='openpyxl')
     messagebox.showinfo("Guardado exitoso", "Los datos se han guardado correctamente en el archivo 'gastos_diarios.xlsx'.")
 
@@ -78,25 +79,11 @@ def cargar_datos_excel():
             fecha = row['Fecha'].date()
             descripcion = row['Descripción']
             monto = row['Monto']
+            categoria = row['Categoría']
             if fecha in gastos_por_dia:
-                gastos_por_dia[fecha].append({"descripcion": descripcion, "monto": monto})
+                gastos_por_dia[fecha].append({"descripcion": descripcion, "monto": monto, "categoria": categoria})
             else:
-                gastos_por_dia[fecha] = [{"descripcion": descripcion, "monto": monto}]
-
-def cargar_datos_por_fecha(fecha):
-    if os.path.exists('gastos_diarios.xlsx'):
-        df = pd.read_excel('gastos_diarios.xlsx', engine='openpyxl')
-        df['Fecha'] = pd.to_datetime(df['Fecha'], format='%Y-%m-%d')
-        df_filtrado = df[df['Fecha'] == fecha]
-        tabla.delete(*tabla.get_children())  # Limpiamos la tabla antes de mostrar los nuevos datos
-        for index, row in df_filtrado.iterrows():
-            descripcion = row['Descripción']
-            monto = row['Monto']
-            if fecha in gastos_por_dia:
-                gastos_por_dia[fecha].append({"descripcion": descripcion, "monto": monto})
-            else:
-                gastos_por_dia[fecha] = [{"descripcion": descripcion, "monto": monto}]
-            tabla.insert("", "end", values=(descripcion, fecha.strftime('%Y-%m-%d'), f"{monto:n} CLP"))
+                gastos_por_dia[fecha] = [{"descripcion": descripcion, "monto": monto, "categoria": categoria}]
 
 # Crear ventana principal
 ventana = tk.Tk()
@@ -133,23 +120,37 @@ etiqueta_descripcion_gasto.grid(row=4, column=0, padx=10, pady=5)
 entrada_descripcion_gasto = tk.Entry(ventana)
 entrada_descripcion_gasto.grid(row=4, column=1, padx=10, pady=5)
 
+# Lista de categorías de gastos
+categorias_gastos = ["Comida", "Transporte", "Gastos Comunes", "Renta", "Ocio", "Créditos"]
+combo_categoria = ttk.Combobox(ventana, values=categorias_gastos, state="readonly")
+combo_categoria.grid(row=5, column=1, padx=10, pady=5)
+combo_categoria.set(categorias_gastos[0])  # Valor por defecto
+
+# Etiqueta para seleccionar categoría
+etiqueta_categoria = tk.Label(ventana, text="Categoría:")
+etiqueta_categoria.grid(row=5, column=0, padx=10, pady=5)
+
 # Botón para agregar gasto diario
 boton_agregar_gasto = tk.Button(ventana, text="Agregar Gasto Diario", command=agregar_gasto_diario)
-boton_agregar_gasto.grid(row=5, column=0, columnspan=2, padx=10, pady=5)
+boton_agregar_gasto.grid(row=6, column=0, columnspan=2, padx=10, pady=5)
 
 # Etiqueta para mostrar el gasto total del mes en pesos chilenos
 label_gasto_total_mes = tk.Label(ventana, text="Gasto total del mes: ")
-label_gasto_total_mes.grid(row=6, column=0, columnspan=2, padx=10, pady=5)
+label_gasto_total_mes.grid(row=7, column=0, columnspan=2, padx=10, pady=5)
 
 # Etiqueta para mostrar el saldo restante de los ingresos mensuales en pesos chilenos
 label_saldo = tk.Label(ventana, text="Saldo restante: ")
-label_saldo.grid(row=7, column=0, columnspan=2, padx=10, pady=5)
+label_saldo.grid(row=8, column=0, columnspan=2, padx=10, pady=5)
 
 # Crear tabla de gastos por día
-tabla = ttk.Treeview(ventana, columns=("Descripción", "Fecha", "Monto"))
+tabla = ttk.Treeview(ventana, columns=("Descripción", "Fecha", "Monto", "Categoría"))
 tabla.heading("#1", text="Descripción")
 tabla.heading("#2", text="Fecha")
 tabla.heading("#3", text="Monto")
-tabla.grid(row=8, column=0, columnspan=2, padx=10, pady=5)
+tabla.heading("#4", text="Categoría")
+tabla.grid(row=9, column=0, columnspan=2, padx=10, pady=5)
+
+# Asociar evento de selección de fecha al calendario
+cal.bind("<<CalendarSelected>>", seleccionar_fecha)
 
 ventana.mainloop()

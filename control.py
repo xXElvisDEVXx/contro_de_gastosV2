@@ -10,6 +10,21 @@ import os
 # Configurar el idioma y la moneda a pesos chilenos (CLP)
 locale.setlocale(locale.LC_ALL, 'es_CL.UTF-8')
 
+def guardar_categorias():
+    with open('categorias.txt', 'w') as file:
+        for categoria in categorias_gastos:
+            file.write(f"{categoria}\n")
+
+def cargar_categorias():
+    categorias_gastos = categorias_gastos_predefinidas[:]
+    if os.path.exists('categorias.txt'):
+        with open('categorias.txt', 'r') as file:
+            categorias_personalizadas = file.read().splitlines()
+            for categoria in categorias_personalizadas:
+                if categoria not in categorias_gastos:
+                    categorias_gastos.append(categoria)
+    return categorias_gastos
+
 def calcular_saldo():
     ingresos = float(entrada_ingresos.get())
     # Calcular gasto total del mes
@@ -88,6 +103,7 @@ def agregar_categoria_personalizada():
         categorias_gastos.append(nueva_categoria)
         combo_categoria["values"] = categorias_gastos
         combo_categoria.set(nueva_categoria)
+        guardar_categorias()
 
 # Crear ventana principal
 ventana = tk.Tk()
@@ -95,6 +111,10 @@ ventana.title("Control de Gastos Mensuales")
 
 # Variables para almacenar los gastos por día
 gastos_por_dia = {}
+
+# Cargar categorías
+categorias_gastos_predefinidas = ["Comida", "Transporte", "Gastos Comunes", "Renta", "Ocio", "Créditos"]
+categorias_gastos = cargar_categorias()
 
 # Cargar datos del archivo Excel al inicio
 cargar_datos_excel()
@@ -124,11 +144,10 @@ etiqueta_descripcion_gasto.grid(row=4, column=0, padx=10, pady=5)
 entrada_descripcion_gasto = tk.Entry(ventana)
 entrada_descripcion_gasto.grid(row=4, column=1, padx=10, pady=5)
 
-# Lista de categorías de gastos predefinidas
-categorias_gastos_predefinidas = ["Comida", "Transporte", "Gastos Comunes", "Renta", "Ocio", "Créditos"]
-combo_categoria = ttk.Combobox(ventana, values=categorias_gastos_predefinidas, state="readonly")
+# Lista de categorías de gastos
+combo_categoria = ttk.Combobox(ventana, values=categorias_gastos, state="readonly")
 combo_categoria.grid(row=5, column=1, padx=10, pady=5)
-combo_categoria.set(categorias_gastos_predefinidas[0])  # Valor por defecto
+combo_categoria.set(categorias_gastos[0])  # Valor por defecto
 
 # Etiqueta para seleccionar categoría
 etiqueta_categoria = tk.Label(ventana, text="Categoría:")
@@ -165,7 +184,6 @@ entrada_categoria_personalizada.grid(row=10, column=1, padx=10, pady=5)
 boton_agregar_categoria = tk.Button(ventana, text="Agregar", command=agregar_categoria_personalizada)
 boton_agregar_categoria.grid(row=10, column=2, padx=10, pady=5)
 
-# Lista de todas las categorías de gastos
-categorias_gastos = categorias_gastos_predefinidas[:]
-
 ventana.mainloop()
+
+
